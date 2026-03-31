@@ -1,0 +1,88 @@
+plugins {
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'com.gradleup.shadow' version '8.3.6'
+}
+
+group   = 'com.acryliccut'
+version = '1.0.0'
+
+def javafxVersion = '21.0.3'
+def javafxModules = ['javafx-base', 'javafx-graphics', 'javafx-controls', 'javafx-fxml']
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+javafx {
+    version = javafxVersion
+    modules = ['javafx.controls', 'javafx.fxml']
+}
+
+configurations {
+    javafxWin
+    javafxLinux
+    javafxMac
+    javafxMacAarch64
+}
+
+dependencies {
+    // OpenCV + native binaries (Windows / macOS x64,arm64 / Linux x64)
+    // nu.pattern.OpenCV.loadLocally() が実行時に自動抽出・ロード
+    implementation 'org.openpnp:opencv:4.9.0-0'
+
+    javafxModules.each { moduleName ->
+        add('javafxWin',        "org.openjfx:${moduleName}:${javafxVersion}:win")         { transitive = false }
+        add('javafxLinux',      "org.openjfx:${moduleName}:${javafxVersion}:linux")       { transitive = false }
+        add('javafxMac',        "org.openjfx:${moduleName}:${javafxVersion}:mac")         { transitive = false }
+        add('javafxMacAarch64', "org.openjfx:${moduleName}:${javafxVersion}:mac-aarch64") { transitive = false }
+    }
+}
+
+application {
+    mainClass = 'com.acryliccut.Launcher'
+}
+
+// エンコーディング設定
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('jar') {
+    manifest {
+        attributes 'Main-Class': application.mainClass.get()
+    }
+}
+
+tasks.named('shadowJar') {
+    archiveClassifier = 'all'
+    manifest {
+        attributes 'Main-Class': application.mainClass.get()
+    }
+    mergeServiceFiles()
+
+    // JavaFX の各OS向け native をまとめて取り込み、単一JARで配布できるようにする。
+    configurations = [
+        project.configurations.runtimeClasspath,
+        project.configurations.javafxWin,
+        project.configurations.javafxLinux,
+        project.configurations.javafxMac,
+        project.configurations.javafxMacAarch64
+    ]
+}
+
+tasks.register('fatJar') {
+    group = 'build'
+    description = 'Builds a cross-platform executable fat JAR that bundles JavaFX and OpenCV.'
+    dependsOn tasks.named('shadowJar')
+}
+
+tasks.named('assemble') {
+    dependsOn tasks.named('fatJar')
+}

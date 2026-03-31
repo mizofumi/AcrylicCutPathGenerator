@@ -1,6 +1,19 @@
 <template>
-  <v-container class="pa-4" style="max-width: 600px;">
-    <h1 class="text-h5 mb-4">アクリルカットパス生成</h1>
+  <v-app>
+    <v-app-bar color="indigo">
+        <v-toolbar-title style="cursor: pointer" @click="$router.push('/')">
+          <div style="display: inline-block; vertical-align: middle;">
+              <ul>
+                <a href="https://www.booyah.dev">
+                    <img class="mr-2" src="/logo_white.png" style="display: inline-block;vertical-align: middle; height: 40px;" />
+                </a>
+                  アクリルカットパス生成くん
+              </ul>
+          </div>
+        </v-toolbar-title>
+    </v-app-bar>
+    <v-container class="pa-4 mt-12" style="max-width: 600px;">
+    
 
     <v-file-input
       label="PNG画像を選択"
@@ -36,6 +49,8 @@
       </v-btn>
     </div>
     </v-container>
+  </v-app>
+
 </template>
 
 <script setup lang="ts">
@@ -54,7 +69,7 @@ const submit = async () => {
   form.append('file', file.value)
   form.append('offset', offset.value.toString())
 
-  const res = await fetch('http://localhost:8000/generate', {
+  const res = await fetch('https://cutpathgen-be.booyah.dev/generate', {
     method: 'POST',
     body: form
   })

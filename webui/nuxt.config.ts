@@ -6,9 +6,9 @@ export default defineNuxtConfig({
   build: {
     transpile: ['vuetify'],
   },
-  runtimeConfig: {
-    public: {
-      apiBase: 'http://localhost:8000'
+  app: {
+    head: {
+      title: "アクリルカットパス生成くん"
     }
   },
   modules: [

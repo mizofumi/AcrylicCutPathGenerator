@@ -66,13 +66,18 @@ def generate_cutpath(input_png, output_svg, offset=10, smooth=True, eps=0.001):
         pts = np.flip(np.round(contour).astype(np.int32), axis=1)
         cv2.drawContours(mask, [pts], -1, 255, thickness=cv2.FILLED)
 
+    # マスクをオフセット分パディングして、境界近くの輪郭がクリップされず画像サイズを超えて拡張されるようにする
+    padded = cv2.copyMakeBorder(mask, offset, offset, offset, offset,
+                                cv2.BORDER_CONSTANT, value=0)
     kernel_size = offset * 2 + 1
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
-    dilated = cv2.dilate(mask, kernel, iterations=1)
+    dilated = cv2.dilate(padded, kernel, iterations=1)
 
     final_contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    dwg = svgwrite.Drawing(output_svg, size=(f"{width}px", f"{height}px"))
+    canvas_w = width + 2 * offset
+    canvas_h = height + 2 * offset
+    dwg = svgwrite.Drawing(output_svg, size=(f"{canvas_w}px", f"{canvas_h}px"))
 
     with Image.open(input_png) as img:
         buffered = BytesIO()
@@ -80,7 +85,7 @@ def generate_cutpath(input_png, output_svg, offset=10, smooth=True, eps=0.001):
         img_b64 = base64.b64encode(buffered.getvalue()).decode()
 
     image_href = f"data:image/png;base64,{img_b64}"
-    dwg.add(dwg.image(href=image_href, insert=(0, 0), size=(f"{width}px", f"{height}px")))
+    dwg.add(dwg.image(href=image_href, insert=(offset, offset), size=(f"{width}px", f"{height}px")))
 
     for cnt in final_contours:
         if smooth:
